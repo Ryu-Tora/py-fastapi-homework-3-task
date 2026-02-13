@@ -49,3 +49,7 @@ class UserRefreshTokenResponseSchema(BaseModel):
 
 class UserAccessTokenResponseSchema(BaseModel):
     access_token: str
+
+
+class UserLoginRequestSchema(BaseModel):
+    pass
