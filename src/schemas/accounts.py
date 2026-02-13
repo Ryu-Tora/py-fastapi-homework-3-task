@@ -61,3 +61,7 @@ class TokenRefreshResponseSchema(BaseModel):
 
 class UserLogin(BaseModel):
     pass
+
+
+class UserRefreshToken(BaseModel):
+    pass
