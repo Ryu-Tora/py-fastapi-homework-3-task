@@ -43,7 +43,7 @@ class UserLoginResponseSchema(BaseModel):
     password: str
 
 
-class UserRefreshTokenResponseSchema(BaseModel):
+class TokenRefreshRequestSchema(BaseModel):
     refresh_token: str
 
 
