@@ -21,7 +21,7 @@ from schemas.accounts import (
     UserRegistrationResponseSchema,
     UserRegistrationRequestSchema,
     UserActivationRequestSchema,
-    PasswordResetToken,
+    PasswordResetRequestSchema,
     PasswordResetComplete,
     UserLogin,
     UserRefreshToken,
@@ -102,7 +102,7 @@ async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends
 
 
 @router.post("/password-reset/request/", status_code=status.HTTP_200_OK)
-async def reset_password_request(data: PasswordResetToken, db: AsyncSession = Depends(get_db)):
+async def reset_password_request(data: PasswordResetRequestSchema, db: AsyncSession = Depends(get_db)):
     try:
         result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
         db_user = result_user.scalar_one_or_none()
