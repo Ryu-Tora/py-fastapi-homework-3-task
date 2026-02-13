@@ -11,7 +11,7 @@ class UserRegistrationRequestSchema(UserBase):
     password: str
 
 
-class UserRead(UserBase):
+class UserRegistrationResponseSchema(UserBase):
     id: int
 
     class Config:

@@ -18,7 +18,7 @@ from database import (
 )
 from exceptions import BaseSecurityError, TokenExpiredError, InvalidTokenError
 from schemas.accounts import (
-    UserRead,
+    UserRegistrationResponseSchema,
     UserRegistrationRequestSchema,
     ActivateAccount,
     PasswordResetToken,
@@ -35,7 +35,7 @@ router = APIRouter()
 
 @router.post(
     "/register/",
-    response_model=UserRead,
+    response_model=UserRegistrationResponseSchema,
     status_code=status.HTTP_201_CREATED
 )
 async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession = Depends(get_db)):
