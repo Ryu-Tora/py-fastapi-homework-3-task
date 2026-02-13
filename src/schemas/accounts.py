@@ -65,3 +65,7 @@ class UserLogin(BaseModel):
 
 class UserRefreshToken(BaseModel):
     pass
+
+
+class UserAccessToken(BaseModel):
+    pass
