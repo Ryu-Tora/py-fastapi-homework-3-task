@@ -74,7 +74,7 @@ async def activate(data: ActivateAccount, db: AsyncSession = Depends(get_db)):
         result_token = await db.execute(select(ActivationTokenModel).where(
             ActivationTokenModel.token == data.token,
             ActivationTokenModel.user_id == db_user.id
-            )
+        )
         )
         db_token = result_token.scalar_one_or_none()
         if db_token is None or db_token.expires_at < datetime.utcnow():
@@ -94,7 +94,7 @@ async def activate(data: ActivateAccount, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/password-reset/request/", status_code=status.HTTP_200_OK)
-async def reset_password(data: PasswordResetToken, db: AsyncSession = Depends(get_db)):
+async def reset_password_request(data: PasswordResetToken, db: AsyncSession = Depends(get_db)):
     try:
         result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
         db_user = result_user.scalar_one_or_none()
@@ -116,11 +116,13 @@ async def reset_password(data: PasswordResetToken, db: AsyncSession = Depends(ge
 
 
 @router.post("/password-reset/complete/", status_code=status.HTTP_200_OK)
-async def reset_password(data: PasswordResetComplete, db: AsyncSession = Depends(get_db)):
+async def reset_password_complete(data: PasswordResetComplete, db: AsyncSession = Depends(get_db)):
     try:
         result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
         db_user = result_user.scalar_one_or_none()
-        result_token = await db.execute(select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id))
+        result_token = await db.execute(
+            select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id)
+        )
         db_token = result_token.scalar_one_or_none()
 
         if not db_user or not db_user.is_active:
@@ -190,7 +192,7 @@ async def login(
         raise HTTPException(status_code=500, detail="An error occurred while processing the request.")
 
 
-@router.post("/api/v1/accounts/refresh/",response_model=UserAccessToken, status_code=status.HTTP_200_OK)
+@router.post("/api/v1/accounts/refresh/", response_model=UserAccessToken, status_code=status.HTTP_200_OK)
 async def refresh_access_token(
         refresh_token: UserRefreshToken,
         db: AsyncSession = Depends(get_db),

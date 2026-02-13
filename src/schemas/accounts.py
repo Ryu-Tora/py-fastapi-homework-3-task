@@ -31,6 +31,7 @@ class ActivateAccount(BaseModel):
 class PasswordResetToken(BaseModel):
     email: EmailStr
 
+
 class PasswordResetComplete(BaseModel):
     email: EmailStr
     token: str
