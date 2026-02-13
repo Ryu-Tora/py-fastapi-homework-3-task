@@ -49,3 +49,7 @@ class UserRefreshToken(BaseModel):
 
 class UserAccessToken(BaseModel):
     access_token: str
+
+
+class MessageResponseSchema(UserBase):
+    pass
