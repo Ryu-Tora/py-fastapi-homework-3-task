@@ -44,13 +44,18 @@ async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession 
     if db_user:
         raise HTTPException(status_code=409, detail=f"A user with this email {db_user.email} already exists.")
 
+    result_group = await db.execute(select(UserGroupModel).where(UserGroupModel.name == UserGroupEnum.USER))
+    user_group = result_group.scalar_one_or_none()
+    if not user_group:
+        raise HTTPException(status_code=500, detail="Default user group not found.")
+
     try:
-        new_user = UserModel().create(
+        new_user = UserModel.create(
             email=user_to_add.email,
             raw_password=user_to_add.password,
-            group_id=UserGroupEnum.USER
+            group_id=user_group.id,
         )
-        activation_token = ActivationTokenModel()
+        activation_token = ActivationTokenModel(user=new_user)
         new_user.activation_token = activation_token
 
         db.add(new_user)
