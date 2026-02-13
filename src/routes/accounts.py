@@ -17,8 +17,16 @@ from database import (
     RefreshTokenModel
 )
 from exceptions import BaseSecurityError, TokenExpiredError, InvalidTokenError
-from schemas.accounts import UserRead, UserRegistrationRequestSchema, ActivateAccount, PasswordResetToken, PasswordResetComplete, \
-    UserLogin, UserRefreshToken, UserAccessToken
+from schemas.accounts import (
+    UserRead,
+    UserRegistrationRequestSchema,
+    ActivateAccount,
+    PasswordResetToken,
+    PasswordResetComplete,
+    UserLogin,
+    UserRefreshToken,
+    UserAccessToken
+)
 from security.interfaces import JWTAuthManagerInterface
 from security.passwords import hash_password
 
