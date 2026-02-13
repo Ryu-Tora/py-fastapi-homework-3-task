@@ -18,7 +18,7 @@ class UserRegistrationResponseSchema(UserBase):
         from_attributes = True
 
 
-class Token(BaseModel):
+class MessageResponseSchema(BaseModel):
     access_token: str
     token_type: str
 
@@ -38,18 +38,14 @@ class PasswordResetCompleteRequestSchema(BaseModel):
     password: str
 
 
-class UserLogin(BaseModel):
+class UserLoginResponseSchema(BaseModel):
     email: EmailStr
     password: str
 
 
-class UserRefreshToken(BaseModel):
+class UserRefreshTokenResponseSchema(BaseModel):
     refresh_token: str
 
 
-class UserAccessToken(BaseModel):
+class UserAccessTokenResponseSchema(BaseModel):
     access_token: str
-
-
-class MessageResponseSchema(UserBase):
-    pass
