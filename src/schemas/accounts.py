@@ -32,7 +32,7 @@ class PasswordResetRequestSchema(BaseModel):
     email: EmailStr
 
 
-class PasswordResetComplete(BaseModel):
+class PasswordResetCompleteRequestSchema(BaseModel):
     email: EmailStr
     token: str
     password: str
