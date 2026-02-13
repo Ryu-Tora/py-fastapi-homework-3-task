@@ -34,18 +34,21 @@ async def register(user_to_add: UserCreate, db: AsyncSession = Depends(get_db)):
     result_user = await db.execute(select(UserModel).where(UserModel.email == user_to_add.email))
     db_user = result_user.scalar_one_or_none()
     if db_user:
-        raise HTTPException(status_code=409, detail="A user with this email test@example.com already exists.")
+        raise HTTPException(status_code=409, detail=f"A user with this email {db_user.email} already exists.")
 
     try:
-        hashed_password = hash_password(user_to_add.password)
         new_user = UserModel().create(
             email=user_to_add.email,
-            raw_password=hashed_password,
+            raw_password=user_to_add.password,
             group_id=UserGroupEnum.USER
         )
+        activation_token = ActivationTokenModel()
+        new_user.activation_token = activation_token
+
         db.add(new_user)
         await db.commit()
         await db.refresh(new_user)
+
         return new_user
 
     except Exception:
@@ -65,7 +68,7 @@ async def activate(data: ActivateAccount, db: AsyncSession = Depends(get_db)):
                 detail="Invalid or expired activation token."
             )
 
-        if not db_user.is_active:
+        if db_user.is_active:
             raise HTTPException(status_code=400, detail="User account is already active.")
 
         result_token = await db.execute(select(ActivationTokenModel).where(
@@ -77,7 +80,7 @@ async def activate(data: ActivateAccount, db: AsyncSession = Depends(get_db)):
         if db_token is None or db_token.expires_at < datetime.utcnow():
             raise HTTPException(status_code=400, detail="Invalid or expired activation token.")
 
-        db_user.is_activ = True
+        db_user.is_active = True
         await db.delete(db_token)
         await db.commit()
         return {"message": "User account activated successfully."}
@@ -117,7 +120,7 @@ async def reset_password(data: PasswordResetComplete, db: AsyncSession = Depends
     try:
         result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
         db_user = result_user.scalar_one_or_none()
-        result_token = await db.execute(select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user))
+        result_token = await db.execute(select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id))
         db_token = result_token.scalar_one_or_none()
 
         if not db_user or not db_user.is_active:
@@ -126,13 +129,13 @@ async def reset_password(data: PasswordResetComplete, db: AsyncSession = Depends
                 await db.commit()
             raise HTTPException(status_code=400, detail="Invalid email or token.")
 
-        if db_token != data.token or db_token.expires_at < datetime.now(timezone.utc):
+        if db_token.token != data.token or db_token.expires_at < datetime.now(timezone.utc):
             if db_token:
                 await db.execute(delete(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user))
                 await db.commit()
             raise HTTPException(status_code=400, detail="Invalid email or token.")
 
-        db_user.password = data.password
+        db_user.password = hash_password(data.password)
         await db.delete(db_token)
         await db.commit()
         return {"message": "Password reset successfully."}
@@ -178,7 +181,7 @@ async def login(
 
         return {
             "access_token": access_token,
-            "refresh_token": refresh_token,
+            "refresh_token": refresh_token_str,
             "token_type": "bearer"
         }
 
@@ -198,7 +201,7 @@ async def refresh_access_token(
         user_id = int(validated_refresh_token["sub"])
 
         result_token = await db.execute(select(RefreshTokenModel).where(
-            RefreshTokenModel.token == refresh_token,
+            RefreshTokenModel.token == refresh_token.refresh_token,
             RefreshTokenModel.user_id == user_id
         ))
         db_token = result_token.scalar_one_or_none()

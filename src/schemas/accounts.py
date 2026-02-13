@@ -4,7 +4,7 @@ from database import accounts_validators
 
 
 class UserBase(BaseModel):
-    email: EmailStr | str
+    email: EmailStr
 
 
 class UserCreate(UserBase):
@@ -24,16 +24,15 @@ class Token(BaseModel):
 
 
 class ActivateAccount(BaseModel):
-    email: str
+    email: EmailStr
     token: str
 
 
 class PasswordResetToken(BaseModel):
-    email: str
-
+    email: EmailStr
 
 class PasswordResetComplete(BaseModel):
-    email: str
+    email: EmailStr
     token: str
     password: str
 
