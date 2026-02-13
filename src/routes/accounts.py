@@ -177,9 +177,7 @@ async def login(
             }
         )
         refresh_token_str = jwt_manager.create_refresh_token(
-            data={
-                "sub": str(db_user.id),
-            }
+            {"sub": str(db_user.id)}
         )
         refresh_token = RefreshTokenModel.create(
             user_id=db_user.id,
@@ -195,6 +193,9 @@ async def login(
             "token_type": "bearer"
         }
 
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=500, detail="An error occurred while processing the request.")
@@ -208,11 +209,10 @@ async def refresh_access_token(
 ):
     try:
         validated_refresh_token = jwt_manager.decode_refresh_token(refresh_token.refresh_token)
-        user_id = int(validated_refresh_token["sub"])
+        user_id = int(validated_refresh_token["user_id"])
 
         result_token = await db.execute(select(RefreshTokenModel).where(
-            RefreshTokenModel.token == refresh_token.refresh_token,
-            RefreshTokenModel.user_id == user_id
+            RefreshTokenModel.token == refresh_token.refresh_token
         ))
         db_token = result_token.scalar_one_or_none()
 
@@ -241,3 +241,5 @@ async def refresh_access_token(
             status_code=400,
             detail="Invalid refresh token."
         )
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid refresh token.")
