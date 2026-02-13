@@ -20,7 +20,7 @@ from exceptions import BaseSecurityError, TokenExpiredError, InvalidTokenError
 from schemas.accounts import (
     UserRegistrationResponseSchema,
     UserRegistrationRequestSchema,
-    ActivateAccount,
+    UserActivationRequestSchema,
     PasswordResetToken,
     PasswordResetComplete,
     UserLogin,
@@ -65,7 +65,7 @@ async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession 
 
 
 @router.post("/activate/", status_code=status.HTTP_200_OK)
-async def activate(data: ActivateAccount, db: AsyncSession = Depends(get_db)):
+async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends(get_db)):
     try:
         result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
         db_user = result_user.scalar_one_or_none()

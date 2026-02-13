@@ -23,7 +23,7 @@ class Token(BaseModel):
     token_type: str
 
 
-class ActivateAccount(BaseModel):
+class UserActivationRequestSchema(BaseModel):
     email: EmailStr
     token: str
 
