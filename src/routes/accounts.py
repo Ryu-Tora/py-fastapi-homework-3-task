@@ -17,7 +17,7 @@ from database import (
     RefreshTokenModel
 )
 from exceptions import BaseSecurityError, TokenExpiredError, InvalidTokenError
-from schemas.accounts import UserRead, UserCreate, ActivateAccount, PasswordResetToken, PasswordResetComplete, \
+from schemas.accounts import UserRead, UserRegistrationRequestSchema, ActivateAccount, PasswordResetToken, PasswordResetComplete, \
     UserLogin, UserRefreshToken, UserAccessToken
 from security.interfaces import JWTAuthManagerInterface
 from security.passwords import hash_password
@@ -30,7 +30,7 @@ router = APIRouter()
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED
 )
-async def register(user_to_add: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession = Depends(get_db)):
     result_user = await db.execute(select(UserModel).where(UserModel.email == user_to_add.email))
     db_user = result_user.scalar_one_or_none()
     if db_user:
