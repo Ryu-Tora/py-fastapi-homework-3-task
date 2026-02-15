@@ -180,9 +180,6 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
             )
         return {"message": "Password reset successfully."}
 
-    except HTTPException:
-        await db.rollback()
-        raise
     except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(status_code=500, detail="An error occurred while resetting the password.")
