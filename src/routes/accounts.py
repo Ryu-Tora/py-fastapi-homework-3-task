@@ -29,6 +29,7 @@ from schemas.accounts import (
     UserLoginResponseSchema
 )
 from security.interfaces import JWTAuthManagerInterface
+from security.passwords import hash_password
 
 router = APIRouter()
 
@@ -94,8 +95,18 @@ async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends
         )
         )
         db_token = result_token.scalar_one_or_none()
-        if db_token is None or db_token.expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=400, detail="Invalid or expired activation token.")
+
+        if not db_token:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or expired activation token."
+            )
+
+        if db_token.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or expired activation token."
+            )
 
         db_user.is_active = True
         await db.delete(db_token)
@@ -137,26 +148,32 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
     try:
         result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
         db_user = result_user.scalar_one_or_none()
+
+        if not db_user or not db_user.is_active:
+            raise HTTPException(status_code=400, detail="Invalid email or token.")
+
         result_token = await db.execute(
             select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id)
         )
         db_token = result_token.scalar_one_or_none()
 
-        if not db_user or not db_user.is_active:
-            if db_token:
-                await db.execute(delete(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id))
-                await db.commit()
+        if not db_token:
             raise HTTPException(status_code=400, detail="Invalid email or token.")
 
         if db_token.token != data.token or db_token.expires_at < datetime.now(timezone.utc):
-            if db_token:
-                await db.execute(delete(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id))
-                await db.commit()
+            await db.delete(db_token)
+            await db.commit()
             raise HTTPException(status_code=400, detail="Invalid email or token.")
-
-        db_user.password = data.password
-        await db.delete(db_token)
-        await db.commit()
+        try:
+            db_user.password = hash_password(data.new_password)
+            await db.delete(db_token)
+            await db.commit()
+        except SQLAlchemyError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="An error occurred while resetting the password."
+            )
         return {"message": "Password reset successfully."}
 
     except HTTPException:
@@ -164,7 +181,7 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
         raise
     except SQLAlchemyError:
         await db.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred during password reset.")
+        raise HTTPException(status_code=500, detail="An error occurred while resetting the password.")
     except Exception:
         await db.rollback()
         raise HTTPException(
@@ -191,12 +208,12 @@ async def login(
             raise HTTPException(status_code=403, detail="User account is not activated.")
 
         access_token = jwt_manager.create_access_token(
-            {
-                "sub": str(db_user.id),
-            }
+            data={
+                "user_id": str(db_user.id),
+                }
         )
         refresh_token_str = jwt_manager.create_refresh_token(
-            {"sub": str(db_user.id)}
+            {"user_id": str(db_user.id)}
         )
         refresh_token = RefreshTokenModel.create(
             user_id=db_user.id,

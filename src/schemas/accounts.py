@@ -9,7 +9,7 @@ class UserBase(BaseModel):
 
 
 class UserRegistrationRequestSchema(UserBase):
-    password: str = Field(..., min_length=8)
+    password: str
 
     @classmethod
     @field_validator("password")
@@ -84,7 +84,7 @@ class UserLogin(BaseModel):
 
 
 class UserRefreshToken(BaseModel):
-    pass
+    refresh_token: str
 
 
 class UserAccessToken(BaseModel):
