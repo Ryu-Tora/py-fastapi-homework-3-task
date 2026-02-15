@@ -260,7 +260,7 @@ async def refresh_access_token(
             raise HTTPException(status_code=404, detail="User not found.")
 
         access_token = jwt_manager.create_access_token(
-            data={"user_id": str(user.id)}
+            data={"user_id": user.id}
         )
 
         return {"access_token": access_token}
