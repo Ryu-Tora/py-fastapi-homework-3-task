@@ -208,9 +208,7 @@ async def login(
             raise HTTPException(status_code=403, detail="User account is not activated.")
 
         access_token = jwt_manager.create_access_token(
-            data={
-                "user_id": str(db_user.id),
-                }
+            data={"user_id": str(db_user.id)}
         )
         refresh_token_str = jwt_manager.create_refresh_token(
             {"user_id": str(db_user.id)}
