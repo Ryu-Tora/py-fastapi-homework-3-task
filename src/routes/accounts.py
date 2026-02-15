@@ -115,7 +115,6 @@ async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends
         return {"message": "User account activated successfully."}
 
     except Exception:
-        await db.rollback()
         raise HTTPException(status_code=500, detail="An error occurred during user activation.")
 
 
