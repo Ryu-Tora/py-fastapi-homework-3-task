@@ -191,7 +191,7 @@ async def login(
             raise HTTPException(status_code=403, detail="User account is not activated.")
 
         access_token = jwt_manager.create_access_token(
-            data={
+            {
                 "sub": str(db_user.id),
             }
         )
@@ -228,8 +228,14 @@ async def refresh_access_token(
 ):
     try:
         validated_refresh_token = jwt_manager.decode_refresh_token(refresh_token.refresh_token)
-        user_id = int(validated_refresh_token["sub"])
+        user_id = int(validated_refresh_token["user_id"])
 
+    except TokenExpiredError:
+        raise HTTPException(status_code=400, detail="Token has expired.")
+    except InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid refresh token.")
+
+    try:
         result_token = await db.execute(select(RefreshTokenModel).where(
             RefreshTokenModel.token == refresh_token.refresh_token
         ))
@@ -245,15 +251,11 @@ async def refresh_access_token(
             raise HTTPException(status_code=404, detail="User not found.")
 
         access_token = jwt_manager.create_access_token(
-            data={"sub": str(user.id)}
+            data={"user_id": str(user.id)}
         )
 
         return {"access_token": access_token}
 
-    except TokenExpiredError:
-        raise HTTPException(status_code=400, detail="Refresh token has expired.")
-    except InvalidTokenError:
-        raise HTTPException(status_code=400, detail="Invalid refresh token.")
     except HTTPException:
         raise
     except Exception:
