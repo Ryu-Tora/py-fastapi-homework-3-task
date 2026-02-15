@@ -171,7 +171,7 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
             db_user.password = hash_password(data.password)
             await db.delete(db_token)
             await db.commit()
-            await db.refresh(db_user)
+
         except SQLAlchemyError:
             await db.rollback()
             raise HTTPException(
@@ -180,6 +180,8 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
             )
         return {"message": "Password reset successfully."}
 
+    except HTTPException:
+        raise
     except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(status_code=500, detail="An error occurred while resetting the password.")
@@ -216,7 +218,7 @@ async def login(
         )
         refresh_token = RefreshTokenModel.create(
             user_id=db_user.id,
-            days_valid=settings.LOGIN_REFRESH_TOKEN_DAYS,
+            days_valid=settings.LOGIN_TIME_DAYS,
             token=refresh_token_str,
         )
         db.add(refresh_token)
