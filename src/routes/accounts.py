@@ -52,8 +52,8 @@ async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession 
 
     try:
         new_user = UserModel.create(
-            email=user_to_add["email"],
-            raw_password=user_to_add["password"],
+            email=user_to_add.email,
+            raw_password=user_to_add.password,
             group_id=user_group.id,
         )
         activation_token = ActivationTokenModel(user=new_user)
@@ -111,6 +111,7 @@ async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends
         db_user.is_active = True
         await db.delete(db_token)
         await db.commit()
+        await db.refresh(db_user)
         return {"message": "User account activated successfully."}
 
     except Exception:
