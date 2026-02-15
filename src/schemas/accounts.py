@@ -55,6 +55,23 @@ class PasswordResetCompleteRequestSchema(BaseModel):
     token: str
     password: str
 
+    @classmethod
+    @field_validator("password")
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must contain at least 8 characters.")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lower letter.")
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one digit.")
+        if not re.search(r"[@$!%*?#&]", v):
+            raise ValueError(
+                "Password must contain at least one special character: @, $, !, %, *, ?, #, &."
+            )
+        return v
+
 
 class UserLoginResponseSchema(BaseModel):
     access_token: str
@@ -88,4 +105,4 @@ class UserRefreshToken(BaseModel):
 
 
 class UserAccessToken(BaseModel):
-    pass
+    access_token: str
