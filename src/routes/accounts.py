@@ -133,6 +133,7 @@ async def reset_password_request(data: PasswordResetRequestSchema, db: AsyncSess
             )
             db.add(new_reset_token)
             await db.commit()
+            await db.refresh(new_reset_token)
 
     except Exception:
         await db.rollback()
@@ -165,23 +166,12 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
         await db.commit()
         raise HTTPException(status_code=400, detail="Invalid email or token.")
 
-    try:
-        db_user.password = hash_password(data.password)
-        await db.delete(db_token)
-        await db.commit()
-        await db.refresh(db_user)
+    db_user.password = hash_password(data.password)
+    await db.delete(db_token)
+    await db.commit()
+    await db.refresh(db_user)
 
-        return {"message": "Password reset successfully."}
-
-    except SQLAlchemyError:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail="An error occurred while resetting the password.")
-    except Exception:
-        await db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred during password reset."
-        )
+    return {"message": "Password reset successfully."}
 
 
 @router.post("/login/", response_model=UserLoginResponseSchema, status_code=status.HTTP_201_CREATED)
