@@ -88,9 +88,10 @@ async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends
     if db_user.is_active:
         raise HTTPException(status_code=400, detail="User account is already active.")
 
-    result_token = await db.execute(select(ActivationTokenModel)
-    .where(ActivationTokenModel.token == data.token)
-    .where(ActivationTokenModel.user_id == db_user.id)
+    result_token = await db.execute(
+        select(ActivationTokenModel)
+        .where(ActivationTokenModel.token == data.token)
+        .where(ActivationTokenModel.user_id == db_user.id)
     )
     db_token = result_token.scalar_one_or_none()
 
@@ -105,7 +106,6 @@ async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends
         await db.delete(db_token)
         await db.commit()
         return {"message": "User account activated successfully."}
-
 
     except Exception:
         await db.rollback()
