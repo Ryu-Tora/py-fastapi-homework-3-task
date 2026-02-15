@@ -52,8 +52,8 @@ async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession 
 
     try:
         new_user = UserModel.create(
-            email=user_to_add.email,
-            raw_password=user_to_add.password,
+            email=user_to_add["email"],
+            raw_password=user_to_add["password"],
             group_id=user_group.id,
         )
         activation_token = ActivationTokenModel(user=new_user)
@@ -170,6 +170,7 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
             db_user.password = hash_password(data.password)
             await db.delete(db_token)
             await db.commit()
+            await db.refresh(db_user)
         except SQLAlchemyError:
             await db.rollback()
             raise HTTPException(
