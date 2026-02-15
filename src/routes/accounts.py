@@ -76,46 +76,37 @@ async def register(user_to_add: UserRegistrationRequestSchema, db: AsyncSession 
 
 @router.post("/activate/", status_code=status.HTTP_200_OK)
 async def activate(data: UserActivationRequestSchema, db: AsyncSession = Depends(get_db)):
+    result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
+    db_user = result_user.scalar_one_or_none()
+
+    if not db_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired activation token."
+        )
+
+    if db_user.is_active:
+        raise HTTPException(status_code=400, detail="User account is already active.")
+
+    result_token = await db.execute(select(ActivationTokenModel)
+    .where(ActivationTokenModel.token == data.token)
+    .where(ActivationTokenModel.user_id == db_user.id)
+    )
+    db_token = result_token.scalar_one_or_none()
+
+    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+        if db_token:
+            await db.delete(db_token)
+            await db.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired activation token.")
+
     try:
-        result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
-        db_user = result_user.scalar_one_or_none()
-
-        if not db_user:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid or expired activation token."
-            )
-
-        if db_user.is_active:
-            raise HTTPException(status_code=400, detail="User account is already active.")
-
-        result_token = await db.execute(select(ActivationTokenModel).where(
-            ActivationTokenModel.token == data.token,
-            ActivationTokenModel.user_id == db_user.id
-        )
-        )
-        db_token = result_token.scalar_one_or_none()
-
-        if not db_token:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid or expired activation token."
-            )
-
-        if db_token.expires_at < datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid or expired activation token."
-            )
-
         db_user.is_active = True
         await db.delete(db_token)
         await db.commit()
         return {"message": "User account activated successfully."}
 
-    except HTTPException:
-        await db.rollback()
-        raise
+
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=500, detail="An error occurred during user activation.")
@@ -165,7 +156,7 @@ async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: 
             await db.commit()
             raise HTTPException(status_code=400, detail="Invalid email or token.")
         try:
-            db_user.password = hash_password(data.new_password)
+            db_user.password = hash_password(data.password)
             await db.delete(db_token)
             await db.commit()
         except SQLAlchemyError:
