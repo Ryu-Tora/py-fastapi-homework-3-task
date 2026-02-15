@@ -142,30 +142,30 @@ async def reset_password_request(data: PasswordResetRequestSchema, db: AsyncSess
 
 @router.post("/reset-password/complete/", status_code=status.HTTP_200_OK)
 async def reset_password_complete(data: PasswordResetCompleteRequestSchema, db: AsyncSession = Depends(get_db)):
+    result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
+    db_user = result_user.scalar_one_or_none()
+
+    if not db_user or not db_user.is_active:
+        raise HTTPException(status_code=400, detail="Invalid email or token.")
+
+    result_token = await db.execute(
+        select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id)
+    )
+    db_token = result_token.scalar_one_or_none()
+
+    if not db_token:
+        raise HTTPException(status_code=400, detail="Invalid email or token.")
+
+    token_expires_at = db_token.expires_at
+    if token_expires_at.tzinfo is None:
+        token_expires_at = token_expires_at.replace(tzinfo=timezone.utc)
+
+    if db_token.token != data.token or token_expires_at < datetime.now(timezone.utc):
+        await db.delete(db_token)
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Invalid email or token.")
+
     try:
-        result_user = await db.execute(select(UserModel).where(UserModel.email == data.email))
-        db_user = result_user.scalar_one_or_none()
-
-        if not db_user or not db_user.is_active:
-            raise HTTPException(status_code=400, detail="Invalid email or token.")
-
-        result_token = await db.execute(
-            select(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == db_user.id)
-        )
-        db_token = result_token.scalar_one_or_none()
-
-        if not db_token:
-            raise HTTPException(status_code=400, detail="Invalid email or token.")
-
-        token_expires_at = db_token.expires_at
-        if token_expires_at.tzinfo is None:
-            token_expires_at = token_expires_at.replace(tzinfo=timezone.utc)
-
-        if db_token.token != data.token or token_expires_at < datetime.now(timezone.utc):
-            await db.delete(db_token)
-            await db.commit()
-            raise HTTPException(status_code=400, detail="Invalid email or token.")
-
         db_user.password = hash_password(data.password)
         await db.delete(db_token)
         await db.commit()
